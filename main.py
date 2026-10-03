@@ -1,33 +1,136 @@
 import argparse
 from util import extract_public_key, verify_artifact_signature
-from merkle_proof import DefaultHasher, verify_consistency, verify_inclusion, compute_leaf_hash
+from merkle_proof import (DefaultHasher, RootMismatchError, verify_consistency,
+                          verify_inclusion, compute_leaf_hash)
+
+
+import base64
+import io
+import json
+import os
+from contextlib import redirect_stdout
+import requests
+
+REKOR_URL = "https://rekor.sigstore.dev/api/v1"
 
 def get_log_entry(log_index, debug=False):
-    # TODO: verify that log index value is sane
-    pass
+    # verify that log index value is sane
+    if not isinstance(log_index, int) or log_index < 0:
+        raise ValueError(f"invalid log index: {log_index}")
+    resp = requests.get(f"{REKOR_URL}/log/entries",
+                        params={"logIndex": log_index}, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+    if not data:
+        raise LookupError(f"no entry found at log index {log_index}")
+    uuid, entry = next(iter(data.items()))
+    if debug:
+        print("entry uuid:", uuid)
+    return entry
 
-def get_verification_proof(log_index, debug=False):
-    # TODO: verify that log index value is sane
-    pass
+def get_verification_proof(entry, debug=False):
+    # verify that log index value is sane
+    proof = entry["verification"]["inclusionProof"]
+    if debug:
+        print("proof logIndex:", proof["logIndex"])
+        print("tree size:", proof["treeSize"])
+        print("root hash:", proof["rootHash"])
+        print("number of proof hashes:", len(proof["hashes"]))
+    return proof
 
 def inclusion(log_index, artifact_filepath, debug=False):
-    # TODO::
     # verify that log index and artifact filepath values are sane
-    # extract_public_key(certificate)
-    # verify_artifact_signature(signature, public_key, artifact_filepath)
-    # get_verification_proof(log_index)
-    # verify_inclusion(DefaultHasher, index, tree_size, leaf_hash, hashes, root_hash)
-    pass
+    if log_index is None or log_index < 0:
+        print("log index must be a non-negative integer")
+        return
+    if not artifact_filepath or not os.path.isfile(artifact_filepath):
+        print("please give a valid --artifact file path")
+        return
+    try:
+        entry = get_log_entry(log_index, debug)
+
+        # extract_public_key(certificate)
+        body = json.loads(base64.b64decode(entry["body"]))
+        sig = base64.b64decode(body["spec"]["signature"]["content"])
+        cert_pem = base64.b64decode(body["spec"]["signature"]["publicKey"]["content"])
+        public_key = extract_public_key(cert_pem)
+
+        # verify_artifact_signature(signature, public_key, artifact_filepath)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            verify_artifact_signature(sig, public_key, artifact_filepath)
+        if out.getvalue():
+            print(out.getvalue().strip())
+            print("Offline verification failed: signature check failed")
+            return
+
+        # get_verification_proof(log_index)
+        # verify_inclusion(DefaultHasher, index, tree_size, leaf_hash, hashes, root_hash)
+        proof = get_verification_proof(entry, debug)
+        leaf_hash = compute_leaf_hash(entry["body"])
+        if debug:
+            print("leaf hash:", leaf_hash)
+        verify_inclusion(DefaultHasher, proof["logIndex"], proof["treeSize"],
+                         leaf_hash, proof["hashes"], proof["rootHash"], debug)
+        print("Offline verification successful")
+    except RootMismatchError as e:
+        print("Offline verification failed: Merkle root mismatch")
+        print(e)
+    except Exception as e:
+        print(f"Offline verification failed: {e}")
 
 def get_latest_checkpoint(debug=False):
-    # TODO: Fetch the latest checkpoint from rekor
-    pass
+    # Fetch the latest checkpoint from rekor
+    resp = requests.get(f"{REKOR_URL}/log", timeout=30)
+    resp.raise_for_status()
+    checkpoint = resp.json()
+    if debug:
+        print("tree id:", checkpoint["treeID"])
+        print("tree size:", checkpoint["treeSize"])
+        print("root hash:", checkpoint["rootHash"])
+    return checkpoint
 
 def consistency(prev_checkpoint, debug=False):
-    # TODO: 
     # verify that prev checkpoint is not empty
+    if not prev_checkpoint or not all(
+            k in prev_checkpoint for k in ("treeID", "treeSize", "rootHash")):
+        print("previous checkpoint is empty or incomplete")
+        return
     # get_latest_checkpoint()
-    pass
+    try:
+        latest = get_latest_checkpoint(debug)
+
+        old_size = prev_checkpoint["treeSize"]
+        new_size = latest["treeSize"]
+        if str(prev_checkpoint["treeID"]) != str(latest["treeID"]):
+            print("Consistency verification failed: tree ID does not match "
+                  "the current log tree")
+            return
+        if old_size >= new_size:
+            print("Consistency verification failed: the previous checkpoint "
+                  "must be smaller than the latest one")
+            return
+
+        resp = requests.get(f"{REKOR_URL}/log/proof",
+                            params={"firstSize": old_size,
+                                    "lastSize": new_size,
+                                    "treeID": latest["treeID"]},
+                            timeout=30)
+        resp.raise_for_status()
+        proof = resp.json()["hashes"]
+        if debug:
+            print("old size:", old_size, "old root:", prev_checkpoint["rootHash"])
+            print("new size:", new_size, "new root:", latest["rootHash"])
+            print("number of proof hashes:", len(proof))
+
+        verify_consistency(DefaultHasher, old_size, new_size, proof,
+                           prev_checkpoint["rootHash"], latest["rootHash"])
+        print("Consistency verification successful")
+    except RootMismatchError as e:
+        print("Consistency verification failed: root hash mismatch")
+        print(e)
+    except Exception as e:
+        print(f"Consistency verification failed: {e}")
 
 def main():
     debug = False
@@ -61,9 +164,16 @@ def main():
     if args.checkpoint:
         # get and print latest checkpoint from server
         # if debug is enabled, store it in a file checkpoint.json
-        checkpoint = get_latest_checkpoint(debug)
+        try:
+            checkpoint = get_latest_checkpoint(debug)
+        except requests.RequestException as e:
+            print(f"failed to fetch checkpoint: {e}")
+            return
         print(json.dumps(checkpoint, indent=4))
-    if args.inclusion:
+        if debug:
+            with open("checkpoint.json", "w") as f:
+                json.dump(checkpoint, f, indent=4)
+    if args.inclusion is not None:
         inclusion(args.inclusion, args.artifact, debug)
     if args.consistency:
         if not args.tree_id:
