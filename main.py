@@ -37,11 +37,10 @@ def get_verification_proof(entry, debug=False):
     return proof
 
 def inclusion(log_index, artifact_filepath, debug=False):
-    # verify that artifact filepath value is sane (get_log_entry validates log_index)
-    if not artifact_filepath or not os.path.isfile(artifact_filepath):
-        print("please give a valid --artifact file path")
-        return
     try:
+        # verify that artifact filepath value is sane (get_log_entry validates log_index)
+        if not artifact_filepath or not os.path.isfile(artifact_filepath):
+            raise ValueError(f"invalid --artifact file path: {artifact_filepath}")
         entry = get_log_entry(log_index, debug)
 
         # extract_public_key(certificate)
