@@ -4,7 +4,7 @@ A command-line verifier for the [Rekor](https://docs.sigstore.dev/logging/overvi
 
 ## Installation
 
-Requires Python 3.10+ and [Poetry](https://python-poetry.org/).
+Requires Python 3.11+ and [Poetry](https://python-poetry.org/).
 
 ```bash
 git clone https://github.com/JeffreyRathgeber/sscs-assignment1.git
