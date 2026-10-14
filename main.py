@@ -2,8 +2,10 @@ import argparse
 import base64
 import json
 import os
+from typing import Any
 
 import requests
+
 
 from merkle_proof import (
     DefaultHasher,
@@ -19,7 +21,7 @@ REKOR_URL = "https://rekor.sigstore.dev/api/v1"
 # failures the verification commands report to the user instead of crashing
 EXPECTED_ERRORS = (ValueError, LookupError, OSError, requests.RequestException)
 
-def get_log_entry(log_index, debug=False):
+def get_log_entry(log_index: int, debug: bool = False) -> dict[str, Any]:
     # verify that log index value is sane
     if not isinstance(log_index, int) or log_index < 0:
         raise ValueError(f"invalid log index: {log_index}")
@@ -34,7 +36,9 @@ def get_log_entry(log_index, debug=False):
         print("entry uuid:", uuid)
     return entry
 
-def get_verification_proof(entry, debug=False):
+def get_verification_proof(
+    entry: dict[str, Any], debug: bool = False
+) -> dict[str, Any]:
     # verify that log index value is sane
     proof = entry["verification"]["inclusionProof"]
     if debug:
@@ -44,7 +48,9 @@ def get_verification_proof(entry, debug=False):
         print("number of proof hashes:", len(proof["hashes"]))
     return proof
 
-def inclusion(log_index, artifact_filepath, debug=False):
+def inclusion(
+    log_index: int, artifact_filepath: str | None, debug: bool = False
+) -> None:
     try:
         # verify that artifact filepath value is sane (get_log_entry validates log_index)
         if not artifact_filepath or not os.path.isfile(artifact_filepath):
@@ -75,7 +81,7 @@ def inclusion(log_index, artifact_filepath, debug=False):
     except EXPECTED_ERRORS as e:
         print(f"Offline verification failed: {e}")
 
-def get_latest_checkpoint(debug=False):
+def get_latest_checkpoint(debug: bool = False) -> dict[str, Any]:
     # Fetch the latest checkpoint from rekor
     resp = requests.get(f"{REKOR_URL}/log", timeout=30)
     resp.raise_for_status()
@@ -86,7 +92,7 @@ def get_latest_checkpoint(debug=False):
         print("root hash:", checkpoint["rootHash"])
     return checkpoint
 
-def consistency(prev_checkpoint, debug=False):
+def consistency(prev_checkpoint: dict[str, Any], debug: bool = False) -> None:
     # verify that prev checkpoint is not empty
     if not prev_checkpoint or not all(
             k in prev_checkpoint for k in ("treeID", "treeSize", "rootHash")):
@@ -128,7 +134,7 @@ def consistency(prev_checkpoint, debug=False):
     except EXPECTED_ERRORS as e:
         print(f"Consistency verification failed: {e}")
 
-def main():
+def main() -> None:
     debug = False
     parser = argparse.ArgumentParser(description="Rekor Verifier")
     parser.add_argument('-d', '--debug', help='Debug mode',
