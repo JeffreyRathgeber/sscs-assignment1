@@ -1,2 +1,30 @@
+# Python
 __pycache__/
+*.py[cod]
 .venv/
+venv/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Tool caches and reports
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Secrets and logs
+.env
+.env.*
+*.pem
+*.key
+*.log
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
