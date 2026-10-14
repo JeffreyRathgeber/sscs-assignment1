@@ -1,6 +1,6 @@
-import hashlib
-import binascii
 import base64
+import binascii
+import hashlib
 
 # domain separation prefixes according to the RFC
 RFC6962_LEAF_HASH_PREFIX = 0

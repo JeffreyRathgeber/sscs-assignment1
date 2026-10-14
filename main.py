@@ -1,13 +1,18 @@
 import argparse
-from util import extract_public_key, verify_artifact_signature
-from merkle_proof import (DefaultHasher, RootMismatchError, verify_consistency,
-                          verify_inclusion, compute_leaf_hash)
-
-
 import base64
 import json
 import os
+
 import requests
+
+from merkle_proof import (
+    DefaultHasher,
+    RootMismatchError,
+    compute_leaf_hash,
+    verify_consistency,
+    verify_inclusion,
+)
+from util import extract_public_key, verify_artifact_signature
 
 REKOR_URL = "https://rekor.sigstore.dev/api/v1"
 
