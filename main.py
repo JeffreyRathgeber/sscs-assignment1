@@ -16,6 +16,9 @@ from util import extract_public_key, verify_artifact_signature
 
 REKOR_URL = "https://rekor.sigstore.dev/api/v1"
 
+# failures the verification commands report to the user instead of crashing
+EXPECTED_ERRORS = (ValueError, LookupError, OSError, requests.RequestException)
+
 def get_log_entry(log_index, debug=False):
     # verify that log index value is sane
     if not isinstance(log_index, int) or log_index < 0:
@@ -69,7 +72,7 @@ def inclusion(log_index, artifact_filepath, debug=False):
     except RootMismatchError as e:
         print("Offline verification failed: Merkle root mismatch")
         print(e)
-    except Exception as e:
+    except EXPECTED_ERRORS as e:
         print(f"Offline verification failed: {e}")
 
 def get_latest_checkpoint(debug=False):
@@ -122,7 +125,7 @@ def consistency(prev_checkpoint, debug=False):
     except RootMismatchError as e:
         print("Consistency verification failed: root hash mismatch")
         print(e)
-    except Exception as e:
+    except EXPECTED_ERRORS as e:
         print(f"Consistency verification failed: {e}")
 
 def main():
