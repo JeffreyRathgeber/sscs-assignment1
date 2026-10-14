@@ -6,7 +6,9 @@ import sys
 import tokenize
 
 LITERALS = {"True", "False", "None"}
+KEYWORDS = set(keyword.kwlist) - LITERALS
 OPERAND_TOKENS = {tokenize.NUMBER, tokenize.STRING, tokenize.FSTRING_MIDDLE}
+
 
 
 def halstead(path: str) -> None:
@@ -15,12 +17,14 @@ def halstead(path: str) -> None:
     with tokenize.open(path) as f:
         for tok in tokenize.generate_tokens(f.readline):
             s = tok.string
-            if tok.type == tokenize.OP and s not in ")]}":  # count a bracket pair once
-                operators.append(s)
-            elif tok.type == tokenize.NAME and keyword.iskeyword(s) and s not in LITERALS:
+            # a bracket pair counts once, via its opening bracket
+            is_operator = tok.type == tokenize.OP and s not in ")]}"
+            is_keyword = tok.type == tokenize.NAME and s in KEYWORDS
+            if is_operator or is_keyword:
                 operators.append(s)
             elif tok.type == tokenize.NAME or tok.type in OPERAND_TOKENS:
                 operands.append(s)
+
 
     n1, n2 = len(set(operators)), len(set(operands))
     big_n1, big_n2 = len(operators), len(operands)
