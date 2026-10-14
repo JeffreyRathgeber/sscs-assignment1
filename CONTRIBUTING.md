@@ -16,7 +16,10 @@ Search existing issues first. When opening one, include what you expected, what 
 
 ```bash
 poetry install --no-root
+poetry run pre-commit install
 ```
+
+Commits are scanned for secrets by a [trufflehog](https://github.com/trufflesecurity/trufflehog) pre-commit hook, which checks only the staged changes. Install the `trufflehog` binary and make sure it is on your `PATH`.
 
 ## Coding Style
 

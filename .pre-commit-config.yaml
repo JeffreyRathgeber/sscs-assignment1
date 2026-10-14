@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: trufflehog
+        name: TruffleHog
+        description: Scan staged changes for secrets (latest commit only).
+        entry: trufflehog git file://. --since-commit HEAD --no-update --no-verification --fail
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
