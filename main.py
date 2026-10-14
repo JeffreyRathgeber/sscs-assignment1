@@ -5,10 +5,8 @@ from merkle_proof import (DefaultHasher, RootMismatchError, verify_consistency,
 
 
 import base64
-import io
 import json
 import os
-from contextlib import redirect_stdout
 import requests
 
 REKOR_URL = "https://rekor.sigstore.dev/api/v1"
@@ -56,13 +54,7 @@ def inclusion(log_index, artifact_filepath, debug=False):
         public_key = extract_public_key(cert_pem)
 
         # verify_artifact_signature(signature, public_key, artifact_filepath)
-        out = io.StringIO()
-        with redirect_stdout(out):
-            verify_artifact_signature(sig, public_key, artifact_filepath)
-        if out.getvalue():
-            print(out.getvalue().strip())
-            print("Offline verification failed: signature check failed")
-            return
+        verify_artifact_signature(sig, public_key, artifact_filepath)
 
         # get_verification_proof(log_index)
         # verify_inclusion(DefaultHasher, index, tree_size, leaf_hash, hashes, root_hash)
