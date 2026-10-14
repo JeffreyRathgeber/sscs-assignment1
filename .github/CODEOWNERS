@@ -1,0 +1,12 @@
+# Default owner for everything in the repo
+*                   @JeffreyRathgeber
+
+# Source code
+*.py                @JeffreyRathgeber
+/tests/             @JeffreyRathgeber
+
+# Project config and docs
+/pyproject.toml     @JeffreyRathgeber
+/poetry.lock        @JeffreyRathgeber
+*.md                @JeffreyRathgeber
+/.github/           @JeffreyRathgeber
