@@ -85,7 +85,7 @@ def verify_match(calculated, expected):
 
 def decomp_incl_proof(index, size):
     inner = inner_proof_size(index, size)
-    border = bin(index >> inner).count('1')
+    border = (index >> inner).bit_count()
     return inner, border
 
 def inner_proof_size(index, size):
