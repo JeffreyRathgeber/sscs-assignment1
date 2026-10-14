@@ -37,10 +37,7 @@ def get_verification_proof(entry, debug=False):
     return proof
 
 def inclusion(log_index, artifact_filepath, debug=False):
-    # verify that log index and artifact filepath values are sane
-    if log_index is None or log_index < 0:
-        print("log index must be a non-negative integer")
-        return
+    # verify that artifact filepath value is sane (get_log_entry validates log_index)
     if not artifact_filepath or not os.path.isfile(artifact_filepath):
         print("please give a valid --artifact file path")
         return
