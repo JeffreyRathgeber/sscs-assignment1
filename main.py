@@ -6,7 +6,6 @@ from typing import Any
 
 import requests
 
-
 from merkle_proof import (
     DefaultHasher,
     RootMismatchError,
