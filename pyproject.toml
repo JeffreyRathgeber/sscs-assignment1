@@ -1,0 +1,33 @@
+[project]
+name = "sscs-assignment1"
+version = "0.1.0"
+description = "Rekor transparency log verifier"
+authors = [
+    {name = "Jeffrey Rathgeber",email = "jr5349@nyu.edu"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+dependencies = [
+    "requests (>=2.34.2,<3.0.0)",
+    "cryptography (>=50.0.2,<51.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[dependency-groups]
+dev = [
+    "ruff (>=0.17.0,<0.18.0)",
+    "mypy (>=2.4.0,<3.0.0)",
+    "bandit (>=1.9.4,<2.0.0)",
+    "types-requests (>=2.33.0.20261006,<3.0.0.0)"
+]
+
+[tool.mypy]
+disallow_untyped_defs = true
+check_untyped_defs = true
